@@ -19,7 +19,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { SteadRent } from "../target/types/stead_rent";
-import { findAssociatedAddress } from "./helpers";
+import { assertRevert, findAssociatedAddress } from "./helpers";
 
 describe("stead-rent", () => {
   const provider = Provider.local();
@@ -41,10 +41,6 @@ describe("stead-rent", () => {
 
   const mintKeys: Token[] = Array(collectionSize).fill(undefined);
   const tokenAccounts: PublicKey[] = Array(collectionSize).fill(undefined);
-
-  console.log(
-    `Accounts:\n\tRenter: ${renter.publicKey.toString()}\n\tExhibitor: ${exhibitor.publicKey.toString()}`
-  );
 
   const indexRented = 0;
   const indexDeposited = 1;
@@ -122,24 +118,24 @@ describe("stead-rent", () => {
         state: state,
         owner: dao.publicKey,
       },
-      signers: [dao]
+      signers: [dao],
     });
 
-    let s = await program.account.state.fetch(state)
-    expect(s.feeEarner.toString()).to.equal(otherDao.publicKey.toString())
-    expect(s.feeAmount).to.equal(feeAmount * 2)
+    let s = await program.account.state.fetch(state);
+    expect(s.feeEarner.toString()).to.equal(otherDao.publicKey.toString());
+    expect(s.feeAmount).to.equal(feeAmount * 2);
 
     await program.rpc.setState(dao.publicKey, feeAmount, {
       accounts: {
         state: state,
         owner: otherDao.publicKey,
       },
-      signers: [otherDao]
+      signers: [otherDao],
     });
 
-    s = await program.account.state.fetch(state)
-    expect(s.feeEarner.toString()).to.equal(dao.publicKey.toString())
-    expect(s.feeAmount).to.equal(feeAmount)
+    s = await program.account.state.fetch(state);
+    expect(s.feeEarner.toString()).to.equal(dao.publicKey.toString());
+    expect(s.feeAmount).to.equal(feeAmount);
   });
 
   it("Creates a new exhibition", async () => {
@@ -172,10 +168,6 @@ describe("stead-rent", () => {
       escrow: escrowBump,
       exhibitionToken: exhibitionTokenBump,
     };
-
-    console.log(
-      `Accounts:\n\tExhibition: ${exhibition.toString()}\n\tExhibitor: ${escrow.toString()}`
-    );
 
     await program.rpc.initExhibition(bumps, renterFee, {
       accounts: {
@@ -249,13 +241,6 @@ describe("stead-rent", () => {
       item: exhibitionItemBump,
       tokenAccount: depositedTokenBump,
     };
-
-    console.log(
-      `Accounts:\n\tExhibition: ${exhibition.toString()}\n\tExhibitor: ${escrow.toString()}`
-    );
-    console.log(
-      `\tDeposited Token: ${depositedTokenKey.toString()}\n\tItem: ${exhibitionItemKey.toString()}`
-    );
 
     const definedPrice = new BN(10 ** 9);
 
@@ -339,13 +324,6 @@ describe("stead-rent", () => {
       tokenAccount: depositedTokenBump,
     };
 
-    console.log(
-      `Accounts:\n\tExhibition: ${exhibition.toString()}\n\tEscrow: ${escrow.toString()}`
-    );
-    console.log(
-      `\tDeposited Token: ${depositedTokenKey.toString()}\n\tItem: ${exhibitionItemKey.toString()}`
-    );
-
     const buyerAssociatedAccount = await mintKeys[
       indexDeposited
     ].getOrCreateAssociatedAccountInfo(buyer.publicKey);
@@ -413,5 +391,27 @@ describe("stead-rent", () => {
     expect(await provider.connection.getBalance(dao.publicKey)).to.equal(
       balanceDAOBefore + definedPrice.toNumber() * 0.025
     );
+  });
+
+  it("Cancel", async () => {
+    const [exhibition] = await web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from("exhibition", "utf8"),
+        mintKeys[indexRented].publicKey.toBuffer(),
+      ],
+      program.programId
+    );
+
+    await program.rpc.cancelExhibition({
+      accounts: {
+        exhibition: exhibition,
+        renter: renter.publicKey,
+      },
+      signers: [renter],
+    });
+
+    const { status } = await program.account.exhibition.fetch(exhibition);
+
+    expect('cancelled' in status).to.be.true;
   });
 });

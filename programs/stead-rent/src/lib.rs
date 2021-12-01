@@ -42,6 +42,13 @@ pub mod stead_rent {
         instructions::init_exhibition::handler(ctx, bumps, renter_fee)
     }
 
+    /// Creates an exhibition, held by a token
+    pub fn cancel_exhibition(
+        ctx: Context<CancelExhibition>
+    ) -> ProgramResult {
+        instructions::cancel_exhibition::handler(ctx)
+    }
+
     /// Lets the exhibitor deposit tokens in the exhibition
     pub fn deposit_token(
         ctx: Context<DepositToken>,

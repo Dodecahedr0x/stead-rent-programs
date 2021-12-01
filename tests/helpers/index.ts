@@ -1,3 +1,4 @@
+import assert from "assert";
 import { web3 } from "@project-serum/anchor";
 
 import {
@@ -17,4 +18,11 @@ export const findAssociatedAddress = async (
     owner,
     true
   );
+};
+
+export const assertRevert = async (pendingTx: Promise<any>) => {
+  try {
+    await pendingTx;
+    assert(false);
+  } catch (err) {}
 };

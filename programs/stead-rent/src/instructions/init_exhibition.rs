@@ -118,6 +118,7 @@ pub fn handler(
     exhibition.property = ctx.accounts.renter_account.mint.key();
     exhibition.renter_fee = renter_fee;
     exhibition.exhibitor = ctx.accounts.exhibitor.key();
+    exhibition.status = ExhibitionStatus::Active;
     exhibition.bumps = bumps;
 
     token::transfer(ctx.accounts.transfer_context(), 1)?;

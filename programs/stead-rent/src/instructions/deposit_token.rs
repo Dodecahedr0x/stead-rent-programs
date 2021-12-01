@@ -6,14 +6,14 @@ use crate::state::*;
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct DepositTokenSeedBumps {
     item: u8,
-    token_account: u8
+    token_account: u8,
 }
 
 #[derive(Accounts)]
 #[instruction(bumps: DepositTokenSeedBumps)]
 pub struct DepositToken<'info> {
     /// The exhibition
-    #[account(mut, has_one = exhibitor)]
+    #[account(mut, has_one = exhibitor, constraint = exhibition.status == ExhibitionStatus::Active)]
     pub exhibition: Account<'info, Exhibition>,
 
     /// The item for sale in the exhibition
@@ -29,7 +29,7 @@ pub struct DepositToken<'info> {
         bump = bumps.item
     )]
     pub exhibition_item: Account<'info, ExhibitionItem>,
-    
+
     /// The account owning stored NFTs
     #[account(
         seeds = [
@@ -89,17 +89,17 @@ impl<'info> DepositToken<'info> {
             Transfer {
                 from: self.exhibitor_account.to_account_info(),
                 to: self.deposited_token_account.to_account_info(),
-                authority: self.exhibitor.to_account_info()
+                authority: self.exhibitor.to_account_info(),
             },
         )
     }
 }
 
-/// Creates an exhibition and 
+/// Creates an exhibition and
 pub fn handler(
     ctx: Context<DepositToken>,
     _bump: DepositTokenSeedBumps,
-    price: u64
+    price: u64,
 ) -> ProgramResult {
     let exhibition = &mut ctx.accounts.exhibition;
     exhibition.n_pieces += 1;
