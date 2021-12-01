@@ -33,9 +33,10 @@ describe("stead-rent", () => {
   const buyer = Keypair.generate();
   let state: any;
 
-  const collectionSize = 10;
+  const collectionSize = 3;
   const initialBalance = new BN(10 ** 10);
-  const feeAmount = new BN(500);
+  const feeAmount = 250;
+  const renterFee = 250;
 
   const mintKeys: Token[] = Array(collectionSize).fill(undefined);
   const tokenAccounts: PublicKey[] = Array(collectionSize).fill(undefined);
@@ -99,24 +100,19 @@ describe("stead-rent", () => {
     );
     state = stateAddress;
 
-    await program.rpc.initState(
-      stateBump,
-      dao.publicKey,
-      feeAmount.toNumber(),
-      {
-        accounts: {
-          state: stateAddress,
-          payer: provider.wallet.publicKey,
-          rent: SYSVAR_RENT_PUBKEY,
-          systemProgram: SystemProgram.programId,
-        },
-      }
-    );
+    await program.rpc.initState(stateBump, dao.publicKey, feeAmount, {
+      accounts: {
+        state: stateAddress,
+        payer: provider.wallet.publicKey,
+        rent: SYSVAR_RENT_PUBKEY,
+        systemProgram: SystemProgram.programId,
+      },
+    });
 
-    const s = await program.account.state.fetch(state)
+    const s = await program.account.state.fetch(state);
 
-    expect(s.feeEarner.toString()).to.equal(dao.publicKey.toString())
-    expect(s.feeAmount).to.equal(feeAmount.toNumber())
+    expect(s.feeEarner.toString()).to.equal(dao.publicKey.toString());
+    expect(s.feeAmount).to.equal(feeAmount);
   });
 
   it("Creates a new exhibition", async () => {
@@ -154,8 +150,9 @@ describe("stead-rent", () => {
       `Accounts:\n\tExhibition: ${exhibition.toString()}\n\tExhibitor: ${escrow.toString()}`
     );
 
-    await program.rpc.initExhibition(bumps, {
+    await program.rpc.initExhibition(bumps, renterFee, {
       accounts: {
+        state: state,
         exhibition: exhibition,
         escrow: escrow,
         exhibitionTokenMint: mintKeys[indexRented].publicKey,
@@ -328,8 +325,19 @@ describe("stead-rent", () => {
 
     const definedPrice = new BN(10 ** 9);
 
+    const balanceRenterBefore = await provider.connection.getBalance(
+      renter.publicKey
+    );
+    const balanceExhibitorBefore = await provider.connection.getBalance(
+      exhibitor.publicKey
+    );
+    const balanceDAOBefore = await provider.connection.getBalance(
+      dao.publicKey
+    );
+
     await program.rpc.buyToken(bumps, {
       accounts: {
+        state: state,
         exhibition: exhibition,
         exhibitor: exhibitor.publicKey,
         exhibitionItem: exhibitionItemKey,
@@ -338,6 +346,8 @@ describe("stead-rent", () => {
         depositedTokenAccount: depositedTokenKey,
         buyer: buyer.publicKey,
         buyerAccount: buyerAssociatedAccount.address,
+        renter: renter.publicKey,
+        dao: dao.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       },
@@ -363,6 +373,18 @@ describe("stead-rent", () => {
     const balance = await provider.connection.getBalance(buyer.publicKey);
     expect(balance <= initialBalance.sub(definedPrice).toNumber()).to.equal(
       true
+    );
+    
+    // This balance is greater than expected because
+    // of rent exemption given back on account closing
+    expect(
+      await provider.connection.getBalance(exhibitor.publicKey)
+    ).to.be.above(balanceExhibitorBefore + definedPrice.toNumber() * 0.95);
+    expect(await provider.connection.getBalance(renter.publicKey)).to.equal(
+      balanceRenterBefore + definedPrice.toNumber() * 0.025
+    );
+    expect(await provider.connection.getBalance(dao.publicKey)).to.equal(
+      balanceDAOBefore + definedPrice.toNumber() * 0.025
     );
   });
 });

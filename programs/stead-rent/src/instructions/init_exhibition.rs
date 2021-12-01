@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
 use crate::state::*;
+use crate::errors::*;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct InitExhibitionBumpSeeds {
@@ -13,6 +14,13 @@ pub struct InitExhibitionBumpSeeds {
 #[derive(Accounts)]
 #[instruction(bumps: InitExhibitionBumpSeeds)]
 pub struct InitializeExhibition<'info> {
+    /// The global state
+    #[account(
+        seeds = [b"state"],
+        bump = state.bump
+    )]
+    pub state: Account<'info, State>,
+    
     /// The exhibition that will be created
     #[account(
         init,
@@ -97,12 +105,18 @@ impl<'info> InitializeExhibition<'info> {
 /// Creates an exhibition and 
 pub fn handler(
     ctx: Context<InitializeExhibition>,
-    bumps: InitExhibitionBumpSeeds
+    bumps: InitExhibitionBumpSeeds,
+    renter_fee: u16
 ) -> ProgramResult {
+    if renter_fee > 10000 - ctx.accounts.state.fee_amount {
+        return Err(ErrorCode::FeeOutOfRangeError.into());
+    }
+
     let exhibition = &mut ctx.accounts.exhibition;
 
     exhibition.renter = ctx.accounts.renter.key();
     exhibition.property = ctx.accounts.renter_account.mint.key();
+    exhibition.renter_fee = renter_fee;
     exhibition.exhibitor = ctx.accounts.exhibitor.key();
     exhibition.bumps = bumps;
 

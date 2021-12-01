@@ -12,6 +12,13 @@ pub struct BuyTokenSeedBumps {
 #[derive(Accounts)]
 #[instruction(bumps: BuyTokenSeedBumps)]
 pub struct BuyToken<'info> {
+    /// The global state
+    #[account(
+        seeds = [b"state"],
+        bump = state.bump
+    )]
+    pub state: Account<'info, State>,
+
     /// The exhibition
     #[account(mut)]
     pub exhibition: Account<'info, Exhibition>,
@@ -68,6 +75,14 @@ pub struct BuyToken<'info> {
     )]
     pub buyer_account: Account<'info, TokenAccount>,
 
+    /// The wallet renting the property
+    #[account(mut, constraint = renter.key() == exhibition.renter)]
+    pub renter: AccountInfo<'info>,
+
+    /// The DAO taking a cut
+    #[account(mut, constraint = dao.key() == state.fee_earner)]
+    pub dao: AccountInfo<'info>,
+
     /// The program for interacting with the token.
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,
@@ -75,23 +90,48 @@ pub struct BuyToken<'info> {
     pub system_program: Program<'info, System>,
 }
 
-/// Creates an exhibition and 
+/// Buys a token from the exhibition and split revenues
 pub fn handler(
     ctx: Context<BuyToken>,
     _bump: BuyTokenSeedBumps
 ) -> ProgramResult {
-    msg!("Buying...");
     let exhibition = &mut ctx.accounts.exhibition;
     exhibition.n_pieces -= 1;
 
+    let price = ctx.accounts.exhibition_item.price;
+    let amount_renter = price * (exhibition.renter_fee as u64) / 10000;
+    let amount_fee_earner = price * (ctx.accounts.state.fee_amount as u64) / 10000;
+    let amount_exhibitor = price - amount_fee_earner - amount_renter;
+
+    // Transfer to the exhibitor
     let ix = anchor_lang::solana_program::system_instruction::transfer(
         &ctx.accounts.buyer.key,
         &ctx.accounts.exhibitor.key,
-        ctx.accounts.exhibition_item.price,
+        amount_exhibitor,
     );
     anchor_lang::solana_program::program::invoke(
         &ix,
         &[ctx.accounts.buyer.to_account_info(), ctx.accounts.exhibitor.clone()],
+    )?;
+    // Transfer to the renter
+    let ix = anchor_lang::solana_program::system_instruction::transfer(
+        &ctx.accounts.buyer.key,
+        &ctx.accounts.renter.key,
+        amount_renter,
+    );
+    anchor_lang::solana_program::program::invoke(
+        &ix,
+        &[ctx.accounts.buyer.to_account_info(), ctx.accounts.renter.clone()],
+    )?;
+    // Transfer to the fee earner
+    let ix = anchor_lang::solana_program::system_instruction::transfer(
+        &ctx.accounts.buyer.key,
+        &ctx.accounts.dao.key,
+        amount_fee_earner,
+    );
+    anchor_lang::solana_program::program::invoke(
+        &ix,
+        &[ctx.accounts.buyer.to_account_info(), ctx.accounts.dao.clone()],
     )?;
 
     let seeds = &[

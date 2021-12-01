@@ -11,6 +11,9 @@ pub struct Exhibition {
     /// The property hosting the exhibition
     pub property: Pubkey,
 
+    /// The fee earned by the renter on each sell
+    pub renter_fee: u16,
+
     /// The owner of tokens to be displayed in the exhibition
     pub exhibitor: Pubkey,
 
