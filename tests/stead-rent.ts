@@ -286,6 +286,100 @@ describe("stead-rent", () => {
     expect(exhibitionItem.price.toNumber()).to.equal(definedPrice.toNumber());
   });
 
+  it("Withdraw an item", async () => {
+    const indexOtherDeposit = 2
+    
+    const [exhibition] = await web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from("exhibition", "utf8"),
+        mintKeys[indexRented].publicKey.toBuffer(),
+      ],
+      program.programId
+    );
+    const [escrow] = await web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from("escrow", "utf8"),
+        mintKeys[indexRented].publicKey.toBuffer(),
+      ],
+      program.programId
+    );
+    const [depositedTokenKey, depositedTokenBump] =
+      await web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from("token_account", "utf8"),
+          mintKeys[indexOtherDeposit].publicKey.toBuffer(),
+        ],
+        program.programId
+      );
+    const [exhibitionItemKey, exhibitionItemBump] =
+      await web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from("item", "utf8"),
+          exhibition.toBuffer(),
+          mintKeys[indexOtherDeposit].publicKey.toBuffer(),
+        ],
+        program.programId
+      );
+
+    const bumps = {
+      item: exhibitionItemBump,
+      tokenAccount: depositedTokenBump,
+    };
+
+    const definedPrice = new BN(10 ** 9);
+
+    await program.rpc.depositToken(bumps, definedPrice, {
+      accounts: {
+        exhibition: exhibition,
+        exhibitionItem: exhibitionItemKey,
+        escrow: escrow,
+        depositedTokenMint: mintKeys[indexOtherDeposit].publicKey,
+        depositedTokenAccount: depositedTokenKey,
+        exhibitor: exhibitor.publicKey,
+        exhibitorAccount: tokenAccounts[indexOtherDeposit],
+        payer: provider.wallet.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        rent: SYSVAR_RENT_PUBKEY,
+        systemProgram: SystemProgram.programId,
+      },
+      signers: [exhibitor],
+    });
+
+    const withdrawBumps = {
+      tokenAccount: depositedTokenBump,
+    }
+
+    await program.rpc.withdrawToken(bumps, {
+      accounts: {
+        exhibition: exhibition,
+        exhibitor: exhibitor.publicKey,
+        exhibitorAccount: tokenAccounts[indexOtherDeposit],
+        exhibitionItem: exhibitionItemKey,
+        escrow: escrow,
+        depositedTokenMint: mintKeys[indexOtherDeposit].publicKey,
+        depositedTokenAccount: depositedTokenKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      signers: [exhibitor],
+    });
+
+    const depositedToken = new Token(
+      provider.connection,
+      mintKeys[indexOtherDeposit].publicKey,
+      TOKEN_PROGRAM_ID,
+      exhibitor
+    );
+    const exhibitorAccount = await depositedToken.getAccountInfo(
+      tokenAccounts[indexOtherDeposit]
+    );
+    const escrowAccount = await depositedToken.getAccountInfo(
+      depositedTokenKey
+    );
+
+    expect(exhibitorAccount.amount.toNumber()).to.equal(new BN(1).toNumber());
+    expect(escrowAccount.amount.toNumber()).to.equal(new BN(0).toNumber());
+  });
+
   it("Buys an item", async () => {
     const [exhibition] = await web3.PublicKey.findProgramAddress(
       [

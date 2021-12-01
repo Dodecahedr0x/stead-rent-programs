@@ -25,11 +25,7 @@ pub mod stead_rent {
     }
 
     /// Sets the state of the program
-    pub fn set_state(
-        ctx: Context<SetState>,
-        fee_earner: Pubkey,
-        fee_amount: u16,
-    ) -> ProgramResult {
+    pub fn set_state(ctx: Context<SetState>, fee_earner: Pubkey, fee_amount: u16) -> ProgramResult {
         instructions::set_state::handler(ctx, fee_earner, fee_amount)
     }
 
@@ -43,16 +39,12 @@ pub mod stead_rent {
     }
 
     /// Prevents the artist from depositing more items
-    pub fn cancel_exhibition(
-        ctx: Context<CancelExhibition>
-    ) -> ProgramResult {
+    pub fn cancel_exhibition(ctx: Context<CancelExhibition>) -> ProgramResult {
         instructions::cancel_exhibition::handler(ctx)
     }
 
     /// Closes the exhibition to enable opening a new one with another artist
-    pub fn close_exhibition(
-        ctx: Context<CloseExhibition>
-    ) -> ProgramResult {
+    pub fn close_exhibition(ctx: Context<CloseExhibition>) -> ProgramResult {
         instructions::close_exhibition::handler(ctx)
     }
 
@@ -63,6 +55,14 @@ pub mod stead_rent {
         price: u64,
     ) -> ProgramResult {
         instructions::deposit_token::handler(ctx, bumps, price)
+    }
+
+    /// Lets the exhibitor withdraw tokens from the exhibition
+    pub fn withdraw_token(
+        ctx: Context<WithdrawToken>,
+        _bumps: WithdrawTokenSeedBumps,
+    ) -> ProgramResult {
+        instructions::withdraw_token::handler(ctx)
     }
 
     /// Lets anyone buy one of the token deposited in the exhibition
