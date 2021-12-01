@@ -24,6 +24,15 @@ pub mod stead_rent {
         instructions::init_state::handler(ctx, bump, fee_earner, fee_amount)
     }
 
+    /// Sets the state of the program
+    pub fn set_state(
+        ctx: Context<SetState>,
+        fee_earner: Pubkey,
+        fee_amount: u16,
+    ) -> ProgramResult {
+        instructions::set_state::handler(ctx, fee_earner, fee_amount)
+    }
+
     /// Creates an exhibition, held by a token
     pub fn init_exhibition(
         ctx: Context<InitializeExhibition>,

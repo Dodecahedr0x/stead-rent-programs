@@ -28,6 +28,7 @@ describe("stead-rent", () => {
   const program = workspace.SteadRent as Program<SteadRent>;
 
   const dao = Keypair.generate();
+  const otherDao = Keypair.generate();
   const renter = Keypair.generate();
   const exhibitor = Keypair.generate();
   const buyer = Keypair.generate();
@@ -113,6 +114,32 @@ describe("stead-rent", () => {
 
     expect(s.feeEarner.toString()).to.equal(dao.publicKey.toString());
     expect(s.feeAmount).to.equal(feeAmount);
+  });
+
+  it("Sets state", async () => {
+    await program.rpc.setState(otherDao.publicKey, feeAmount * 2, {
+      accounts: {
+        state: state,
+        owner: dao.publicKey,
+      },
+      signers: [dao]
+    });
+
+    let s = await program.account.state.fetch(state)
+    expect(s.feeEarner.toString()).to.equal(otherDao.publicKey.toString())
+    expect(s.feeAmount).to.equal(feeAmount * 2)
+
+    await program.rpc.setState(dao.publicKey, feeAmount, {
+      accounts: {
+        state: state,
+        owner: otherDao.publicKey,
+      },
+      signers: [otherDao]
+    });
+
+    s = await program.account.state.fetch(state)
+    expect(s.feeEarner.toString()).to.equal(dao.publicKey.toString())
+    expect(s.feeAmount).to.equal(feeAmount)
   });
 
   it("Creates a new exhibition", async () => {
@@ -374,7 +401,7 @@ describe("stead-rent", () => {
     expect(balance <= initialBalance.sub(definedPrice).toNumber()).to.equal(
       true
     );
-    
+
     // This balance is greater than expected because
     // of rent exemption given back on account closing
     expect(
