@@ -14,6 +14,11 @@ declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 pub mod stead_rent {
     use super::*;
 
+    /// Initializes the state of the program
+    pub fn init_state(ctx: Context<InitializeState>, bump: u8, fee_earner: Pubkey, fee_amount: u16) -> ProgramResult {
+        instructions::init_state::handler(ctx, bump, fee_earner, fee_amount)
+    }
+
     /// Creates an exhibition, held by a token
     pub fn init_exhibition(ctx: Context<InitializeExhibition>, bumps: InitExhibitionBumpSeeds) -> ProgramResult {
         instructions::init_exhibition::handler(ctx, bumps)

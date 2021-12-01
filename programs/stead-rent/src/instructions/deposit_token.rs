@@ -101,7 +101,6 @@ pub fn handler(
     _bump: DepositTokenSeedBumps,
     price: u64
 ) -> ProgramResult {
-    msg!("Depositing...");
     let exhibition = &mut ctx.accounts.exhibition;
     exhibition.n_pieces += 1;
 

@@ -27,11 +27,15 @@ describe("stead-rent", () => {
 
   const program = workspace.SteadRent as Program<SteadRent>;
 
+  const dao = Keypair.generate();
   const renter = Keypair.generate();
   const exhibitor = Keypair.generate();
   const buyer = Keypair.generate();
+  let state: any;
+
   const collectionSize = 10;
-  const initialBalance = new BN(10**10)
+  const initialBalance = new BN(10 ** 10);
+  const feeAmount = new BN(500);
 
   const mintKeys: Token[] = Array(collectionSize).fill(undefined);
   const tokenAccounts: PublicKey[] = Array(collectionSize).fill(undefined);
@@ -86,6 +90,33 @@ describe("stead-rent", () => {
       );
     }
     await Promise.all(promises);
+  });
+
+  it("Initialize state", async () => {
+    const [stateAddress, stateBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("state")],
+      program.programId
+    );
+    state = stateAddress;
+
+    await program.rpc.initState(
+      stateBump,
+      dao.publicKey,
+      feeAmount.toNumber(),
+      {
+        accounts: {
+          state: stateAddress,
+          payer: provider.wallet.publicKey,
+          rent: SYSVAR_RENT_PUBKEY,
+          systemProgram: SystemProgram.programId,
+        },
+      }
+    );
+
+    const s = await program.account.state.fetch(state)
+
+    expect(s.feeEarner.toString()).to.equal(dao.publicKey.toString())
+    expect(s.feeAmount).to.equal(feeAmount.toNumber())
   });
 
   it("Creates a new exhibition", async () => {
@@ -308,7 +339,7 @@ describe("stead-rent", () => {
         buyer: buyer.publicKey,
         buyerAccount: buyerAssociatedAccount.address,
         tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId
+        systemProgram: SystemProgram.programId,
       },
       signers: [buyer],
     });
@@ -329,7 +360,9 @@ describe("stead-rent", () => {
     expect(buyerAccount.amount.toNumber()).to.equal(new BN(1).toNumber());
     expect(escrowAccount.amount.toNumber()).to.equal(new BN(0).toNumber());
 
-    const balance = await provider.connection.getBalance(buyer.publicKey)
-    expect(balance <= initialBalance.sub(definedPrice).toNumber()).to.equal(true)
+    const balance = await provider.connection.getBalance(buyer.publicKey);
+    expect(balance <= initialBalance.sub(definedPrice).toNumber()).to.equal(
+      true
+    );
   });
 });
