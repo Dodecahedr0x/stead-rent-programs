@@ -20,7 +20,7 @@ export const findAssociatedAddress = async (
   );
 };
 
-export const assertRevert = async (pendingTx: Promise<any>) => {
+export const assertFail = async (pendingTx: Promise<any>) => {
   try {
     await pendingTx;
     assert(false);

@@ -34,5 +34,5 @@ pub struct Exhibition {
 }
 
 impl Exhibition {
-    pub const LEN: usize = 40 + 40 + 40 + 8;
+    pub const LEN: usize = 3 * 40 + 2 + 8 + 8 + 3;
 }

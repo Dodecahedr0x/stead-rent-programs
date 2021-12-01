@@ -19,7 +19,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { SteadRent } from "../target/types/stead_rent";
-import { assertRevert, findAssociatedAddress } from "./helpers";
+import { assertFail, findAssociatedAddress } from "./helpers";
 
 describe("stead-rent", () => {
   const provider = Provider.local();
@@ -413,5 +413,25 @@ describe("stead-rent", () => {
     const { status } = await program.account.exhibition.fetch(exhibition);
 
     expect('cancelled' in status).to.be.true;
+  });
+
+  it("Close", async () => {
+    const [exhibition] = await web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from("exhibition", "utf8"),
+        mintKeys[indexRented].publicKey.toBuffer(),
+      ],
+      program.programId
+    );
+
+    await program.rpc.closeExhibition({
+      accounts: {
+        exhibition: exhibition,
+        renter: renter.publicKey,
+      },
+      signers: [renter],
+    });
+
+    await assertFail(program.account.exhibition.fetch(exhibition));
   });
 });

@@ -15,5 +15,5 @@ pub struct State {
 }
 
 impl State {
-    pub const LEN: usize = 40 + 4;
+    pub const LEN: usize = 40 + 3;
 }
