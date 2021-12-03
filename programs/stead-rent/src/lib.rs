@@ -8,14 +8,14 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("TrXDop6spRAwHDsSpvY51PxHkvZXKGNYC6bygXZLNC2");
 
 #[program]
-pub mod stead_rent {
+mod stead_rent {
     use super::*;
 
     /// Initializes the state of the program
-    pub fn init_state(
+    pub fn initialize_state(
         ctx: Context<InitializeState>,
         bump: u8,
         fee_earner: Pubkey,
@@ -30,7 +30,7 @@ pub mod stead_rent {
     }
 
     /// Creates an exhibition, held by a token
-    pub fn init_exhibition(
+    pub fn initialize_exhibition(
         ctx: Context<InitializeExhibition>,
         bumps: InitExhibitionBumpSeeds,
         renter_fee: u16,

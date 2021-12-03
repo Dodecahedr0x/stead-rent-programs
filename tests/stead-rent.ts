@@ -15,11 +15,10 @@ import {
 } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
-  Token,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
+  Token
 } from "@solana/spl-token";
 import { SteadRent } from "../target/types/stead_rent";
-import { assertFail, findAssociatedAddress } from "./helpers";
+import { assertFail } from "./helpers";
 
 describe("stead-rent", () => {
   const provider = Provider.local();
@@ -97,7 +96,7 @@ describe("stead-rent", () => {
     );
     state = stateAddress;
 
-    await program.rpc.initState(stateBump, dao.publicKey, feeAmount, {
+    await program.rpc.initializeState(stateBump, dao.publicKey, feeAmount, {
       accounts: {
         state: stateAddress,
         payer: provider.wallet.publicKey,
@@ -169,7 +168,7 @@ describe("stead-rent", () => {
       exhibitionToken: exhibitionTokenBump,
     };
 
-    await program.rpc.initExhibition(bumps, renterFee, {
+    await program.rpc.initializeExhibition(bumps, renterFee, {
       accounts: {
         state: state,
         exhibition: exhibition,
