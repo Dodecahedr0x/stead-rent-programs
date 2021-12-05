@@ -4,7 +4,6 @@ use anchor_lang::prelude::*;
 
 pub mod errors;
 pub mod instructions;
-pub mod state;
 
 use instructions::*;
 
@@ -69,4 +68,76 @@ mod stead_rent {
     pub fn buy_token(ctx: Context<BuyToken>, bumps: BuyTokenSeedBumps) -> ProgramResult {
         instructions::buy_token::handler(ctx, bumps)
     }
+}
+
+/// The global state of the program
+#[account]
+pub struct State {
+    /// The bump used to generate this PDA
+    pub bump: u8, 
+
+    /// The wallet to which fees are given
+    pub fee_earner: Pubkey,
+
+    /// The portion of the sale which goes to the fee earner
+    /// Denominated in basis points
+    pub fee_amount: u16,
+}
+
+impl State {
+    pub const LEN: usize = 40 + 3;
+}
+
+use crate::InitExhibitionBumpSeeds;
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq)]
+pub enum ExhibitionStatus {
+    Active,
+    Cancelled
+}
+
+/// Rental property that will serve as an art gallery
+#[account]
+pub struct Exhibition {
+    /// The owner property where the exhibition takes place
+    pub renter: Pubkey,
+    
+    /// The property hosting the exhibition
+    pub property: Pubkey,
+
+    /// The fee earned by the renter on each sell
+    pub renter_fee: u16,
+
+    /// The owner of tokens to be displayed in the exhibition
+    pub exhibitor: Pubkey,
+
+    /// The number of pieces currently in the exhibition
+    pub n_pieces: u64,
+
+    /// The status of the exhibition
+    pub status: ExhibitionStatus,
+
+    /// Bumps used to sign PDA
+    pub bumps: InitExhibitionBumpSeeds,
+}
+
+impl Exhibition {
+    pub const LEN: usize = 3 * 40 + 2 + 8 + 8 + 3;
+}
+
+/// An item in the exhibition
+#[account]
+pub struct ExhibitionItem {
+    /// The exhibition this item is a part of
+    pub exhibition: Pubkey,
+
+    /// The mint of the item
+    pub mint: Pubkey,
+
+    /// The price defined by the exhibitor
+    pub price: u64,
+}
+
+impl ExhibitionItem {
+    pub const LEN: usize = 40 + 40 + 8;
 }

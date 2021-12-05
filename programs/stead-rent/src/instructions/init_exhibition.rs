@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-use crate::state::*;
+use crate::{Exhibition, ExhibitionStatus, State};
 use crate::errors::*;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]

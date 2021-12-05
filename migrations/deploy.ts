@@ -18,19 +18,30 @@ module.exports = async function (provider) {
   console.log("Owner:", provider.wallet.publicKey.toString());
   console.log("Program ID:", program.programId.toString());
 
-  await program.rpc.initializeState(
-    stateBump,
-    provider.wallet.publicKey,
-    100, // 1% fee
-    {
+  const fee = 100;
+
+  try {
+    await program.rpc.initializeState(
+      stateBump,
+      provider.wallet.publicKey,
+      fee,
+      {
+        accounts: {
+          state: state,
+          payer: provider.wallet.publicKey,
+          rent: SYSVAR_RENT_PUBKEY,
+          systemProgram: SystemProgram.programId,
+        },
+      }
+    );
+  } catch (err) {
+    await program.rpc.setState(provider.wallet.publicKey, fee, {
       accounts: {
         state: state,
-        payer: provider.wallet.publicKey,
-        rent: SYSVAR_RENT_PUBKEY,
-        systemProgram: SystemProgram.programId,
+        owner: provider.wallet.publicKey,
       },
-    }
-  );
+    });
+  }
 
   fs.writeFileSync(
     "../deployment.json",

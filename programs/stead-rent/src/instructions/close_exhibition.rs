@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::state::*;
+use crate::{Exhibition};
 
 #[derive(Accounts)]
 pub struct CloseExhibition<'info> {
@@ -10,7 +10,7 @@ pub struct CloseExhibition<'info> {
 
     /// The onwer of the propertry
     #[account(mut, constraint = renter.key() == exhibition.renter)]
-    pub renter: Signer<'info>,
+    pub renter: AccountInfo<'info>,
 }
 
 /// Closes the exhibition account.

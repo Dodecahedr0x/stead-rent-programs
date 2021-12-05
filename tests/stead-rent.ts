@@ -13,10 +13,7 @@ import {
   SystemProgram,
   SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
-import {
-  TOKEN_PROGRAM_ID,
-  Token
-} from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
 import { SteadRent } from "../target/types/stead_rent";
 import { assertFail } from "./helpers";
 
@@ -286,8 +283,8 @@ describe("stead-rent", () => {
   });
 
   it("Withdraw an item", async () => {
-    const indexOtherDeposit = 2
-    
+    const indexOtherDeposit = 2;
+
     const [exhibition] = await web3.PublicKey.findProgramAddress(
       [
         Buffer.from("exhibition", "utf8"),
@@ -346,7 +343,7 @@ describe("stead-rent", () => {
 
     const withdrawBumps = {
       tokenAccount: depositedTokenBump,
-    }
+    };
 
     await program.rpc.withdrawToken(bumps, {
       accounts: {
@@ -494,18 +491,53 @@ describe("stead-rent", () => {
       ],
       program.programId
     );
+    const [escrow] = await web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from("escrow", "utf8"),
+        mintKeys[indexRented].publicKey.toBuffer(),
+      ],
+      program.programId
+    );
+    const [depositedTokenKey, depositedTokenBump] =
+      await web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from("token_account", "utf8"),
+          mintKeys[indexDeposited].publicKey.toBuffer(),
+        ],
+        program.programId
+      );
 
     await program.rpc.cancelExhibition({
       accounts: {
         exhibition: exhibition,
         renter: renter.publicKey,
+        renterAccount: tokenAccounts[indexRented],
+        escrow: escrow,
+        depositedTokenMint: mintKeys[indexRented].publicKey,
+        depositedTokenAccount: depositedTokenKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
       },
       signers: [renter],
     });
 
     const { status } = await program.account.exhibition.fetch(exhibition);
+    expect("cancelled" in status).to.be.true;
 
-    expect('cancelled' in status).to.be.true;
+    const exhibitionToken = new Token(
+      provider.connection,
+      mintKeys[indexRented].publicKey,
+      TOKEN_PROGRAM_ID,
+      exhibitor
+    );
+    const renterAccount = await exhibitionToken.getAccountInfo(
+      tokenAccounts[indexRented]
+    );
+    const escrowAccount = await exhibitionToken.getAccountInfo(
+      depositedTokenKey
+    );
+
+    expect(renterAccount.amount.toNumber()).to.equal(new BN(1).toNumber());
+    expect(escrowAccount.amount.toNumber()).to.equal(new BN(0).toNumber());
   });
 
   it("Close", async () => {
