@@ -96,9 +96,11 @@ pub fn handler(
     _bump: BuyTokenSeedBumps
 ) -> ProgramResult {
     let exhibition = &mut ctx.accounts.exhibition;
-    exhibition.n_pieces -= 1;
+    let price = &ctx.accounts.exhibition_item.price;
 
-    let price = ctx.accounts.exhibition_item.price;
+    exhibition.n_pieces -= 1;
+    exhibition.total_volume += price;
+
     let amount_renter = price * (exhibition.renter_fee as u64) / 10000;
     let amount_fee_earner = price * (ctx.accounts.state.fee_amount as u64) / 10000;
     let amount_exhibitor = price - amount_fee_earner - amount_renter;

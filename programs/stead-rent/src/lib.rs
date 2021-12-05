@@ -114,6 +114,9 @@ pub struct Exhibition {
     /// The number of pieces currently in the exhibition
     pub n_pieces: u64,
 
+    /// The volume of pieces sold since the start of the exhibition
+    pub total_volume: u64,
+
     /// The status of the exhibition
     pub status: ExhibitionStatus,
 
