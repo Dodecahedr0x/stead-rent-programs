@@ -123,7 +123,13 @@ pub fn handler(
 
     token::transfer(ctx.accounts.transfer_context(), 1)?;
 
-    msg!("Exhibition opened");
+    emit!(ExhibitionStarted {
+        exhibition: exhibition.key(),
+        renter: ctx.accounts.renter.key(),
+        exhibitor: ctx.accounts.exhibitor.key(),
+        total_fee: ctx.accounts.state.fee_amount + renter_fee,
+        property: ctx.accounts.renter_account.mint.key()
+    })
 
     Ok(())
 }

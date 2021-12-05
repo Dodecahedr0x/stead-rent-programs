@@ -144,3 +144,22 @@ pub struct ExhibitionItem {
 impl ExhibitionItem {
     pub const LEN: usize = 40 + 40 + 8;
 }
+
+#[event]
+pub struct ExhibitionStarted {
+    /// The exhibition that is created
+    pub exhibition: Pubkey,
+
+    /// The owner of the property being rented
+    pub renter: Pubkey,
+
+    /// The exhibitor
+    pub exhibitor: Pubkey,
+
+    /// Total fee
+    pub fee: u16,
+
+    /// The property hosting the exhibition
+    #[index]
+    pub property: Pubkey,
+}
